@@ -1,0 +1,2471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rekap Harian, Klaim &amp; Audit Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#090d16" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Rekap UMKM" />
+  <link id="manifestLink" rel="manifest" />
+  <link id="faviconLink" rel="icon" type="image/svg+xml" />
+  <link id="appleIconLink" rel="apple-touch-icon" />
+
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #090d16;
+      color: #f8fafc;
+    }
+    .output-box {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#090d16] text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+  <div class="mx-auto w-full max-w-2xl px-3.5 py-5 sm:px-6 sm:py-7">
+    <!-- Header Utama -->
+    <header class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+          Rekap Harian, Klaim &amp; Audit Admin
+        </h1>
+        <p class="text-xs text-slate-400 sm:text-sm">
+          Pencatatan harian bersih, verifikasi manual admin supervisi &amp; laporan sisa transfer
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          id="btnInstallPWA"
+          onclick="bukaModalPintasan()"
+          class="inline-flex items-center gap-1.5 rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-300 transition hover:bg-sky-500/20 active:scale-95"
+        >
+          <svg class="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+          </svg>
+          <span>Pasang Pintasan</span>
+        </button>
+        <span
+          id="saveStatus"
+          class="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300"
+        >
+          <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+          Tersimpan otomatis
+        </span>
+      </div>
+    </header>
+
+    <!-- Navigasi 3 Tab Utama -->
+    <nav aria-label="Navigasi Utama" class="mb-5 grid grid-cols-3 gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/90 p-1.5">
+      <button
+        type="button"
+        id="tabBtnRekap"
+        onclick="switchTab('rekap')"
+        class="rounded-xl bg-emerald-500 px-2.5 py-2.5 text-xs font-extrabold text-slate-950 shadow-sm transition sm:text-sm"
+      >
+        Rekap Harian
+      </button>
+      <button
+        type="button"
+        id="tabBtnAudit"
+        onclick="switchTab('audit')"
+        class="rounded-xl px-2.5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white sm:text-sm"
+      >
+        Audit &amp; Cek Manual
+      </button>
+      <button
+        type="button"
+        id="tabBtnLaporan"
+        onclick="switchTab('laporan')"
+        class="rounded-xl px-2.5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white sm:text-sm"
+      >
+        Laporan &amp; Sisa
+      </button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: REKAP HARIAN                                                   -->
+    <!-- ===================================================================== -->
+    <main id="panelRekap">
+      <!-- 3 Kotak Ringkasan KPI Atas -->
+      <section aria-label="Ringkasan Akumulasi" class="mb-4 grid grid-cols-3 gap-2.5 sm:gap-3.5">
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 shadow-sm sm:p-4">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Total Kas</div>
+          <div id="kpiKas" class="mt-1 text-lg font-extrabold text-sky-400 sm:text-2xl">0</div>
+        </div>
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 shadow-sm sm:p-4">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Total Fee</div>
+          <div id="kpiFee" class="mt-1 text-lg font-extrabold text-amber-400 sm:text-2xl">0</div>
+        </div>
+        <div class="rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-3 shadow-sm sm:p-4">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-emerald-300/80">Total Final</div>
+          <div id="kpiFinal" class="mt-1 text-lg font-extrabold text-emerald-400 sm:text-2xl">0</div>
+        </div>
+      </section>
+
+      <!-- Info Tanggal & Paket Terdeteksi -->
+      <section class="mb-5 rounded-2xl border border-slate-800/90 bg-slate-900/75 px-4 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs text-slate-300 sm:text-sm">
+            Tanggal: <strong id="displayTanggal" class="font-bold text-white">Belum terdeteksi</strong>
+            <span class="mx-1.5 text-slate-600">•</span>
+            Paket: <strong id="displayPaket" class="font-bold text-emerald-400">0 Paket</strong>
+          </div>
+          <button
+            type="button"
+            onclick="toggleEditHeaderInline()"
+            class="rounded-lg border border-slate-700 bg-slate-800/90 px-2.5 py-1 text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:text-white"
+          >
+            Ubah Tanggal/Paket
+          </button>
+        </div>
+
+        <div id="inlineHeaderEditor" class="mt-3 hidden grid-cols-1 gap-2.5 border-t border-slate-800 pt-3 sm:grid-cols-2">
+          <div>
+            <label for="editTanggalInput" class="mb-1 block text-[11px] font-medium text-slate-400">Tanggal Rekap</label>
+            <input
+              id="editTanggalInput"
+              type="text"
+              placeholder="Tanggal rekap"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="editPaketInput" class="mb-1 block text-[11px] font-medium text-slate-400">Jumlah Paket</label>
+            <input
+              id="editPaketInput"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Kotak Tempel / Ketik Baris Order -->
+      <section class="mb-5 rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+            Tempel / Ketik Baris Order
+          </h2>
+        </div>
+
+        <div id="parseAlert" class="mb-3 hidden rounded-xl border border-rose-500/40 bg-rose-950/50 px-3.5 py-2.5 text-xs font-medium text-rose-200"></div>
+
+        <div>
+          <label for="rawLinesInput" class="mb-1.5 block text-xs font-medium text-slate-300">
+            Tempel catatan harian (mendukung kas dengan kurung maupun tanpa kurung)
+          </label>
+          <textarea
+            id="rawLinesInput"
+            rows="6"
+            placeholder="Tempel catatan order di sini..."
+            class="output-box w-full rounded-xl border border-slate-700/90 bg-slate-950/95 px-3.5 py-3 text-xs leading-relaxed text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 sm:text-sm"
+          ></textarea>
+        </div>
+
+        <div class="mt-3.5 flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onclick="bacaDanMasukkanBaris()"
+            class="flex-1 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-md shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-[0.99] sm:flex-none"
+          >
+            Baca &amp; Masukkan Baris
+          </button>
+          <button
+            type="button"
+            onclick="bersihkanKotakTempel()"
+            class="rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:scale-[0.99]"
+          >
+            Bersihkan Kotak
+          </button>
+        </div>
+      </section>
+
+      <!-- Daftar Entri Hari Ini -->
+      <section class="mb-5 rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+            Daftar Entri Hari Ini (<span id="countEntri">0</span>)
+          </h2>
+          <span class="text-xs text-slate-400">
+            Nama tergabung: <strong id="countGrouped" class="text-slate-200">0</strong> pemesan
+          </span>
+        </div>
+        <div id="listEntri" class="space-y-2.5"></div>
+      </section>
+
+      <!-- Output Rekap & Cadangan -->
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+            Output Rekap &amp; Cadangan
+          </h2>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onclick="salurkanKeLaporanBos()"
+              class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+            >
+              Kirim ke Tab Laporan
+            </button>
+            <button
+              type="button"
+              onclick="toggleImportBox()"
+              class="rounded-lg border border-slate-700 bg-slate-800/80 px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white"
+            >
+              Impor Cadangan
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel Impor Cadangan -->
+        <div id="importPanel" class="mb-4 hidden rounded-xl border border-sky-500/30 bg-slate-950/90 p-3.5">
+          <label for="importTextarea" class="mb-1.5 block text-xs font-semibold text-sky-300">
+            Tempel Cadangan JSON / Teks (.txt) untuk Memulihkan Data
+          </label>
+          <textarea
+            id="importTextarea"
+            rows="4"
+            placeholder="Tempel isi file cadangan .txt atau objek JSON di sini..."
+            class="output-box w-full rounded-xl border border-slate-700 bg-slate-900 p-3 text-xs text-slate-200 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+          ></textarea>
+          <div class="mt-2.5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onclick="prosesImporCadangan()"
+              class="rounded-xl bg-sky-500 px-3.5 py-2 text-xs font-bold text-slate-950 transition hover:bg-sky-400 active:scale-[0.99]"
+            >
+              Terapkan Cadangan
+            </button>
+            <button
+              type="button"
+              onclick="toggleImportBox(false)"
+              class="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+
+        <textarea
+          id="outputWA"
+          readonly
+          rows="17"
+          class="output-box w-full rounded-xl border border-slate-800 bg-slate-950 p-3.5 text-xs leading-relaxed text-slate-100 focus:border-emerald-500 focus:outline-none sm:text-[13px]"
+        ></textarea>
+
+        <!-- Tombol Salin Terpisah & Cadangan -->
+        <div class="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <button
+            type="button"
+            onclick="salinDanaKasSaja()"
+            class="flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-md shadow-sky-500/20 transition hover:bg-sky-400 active:scale-[0.99]"
+          >
+            <span>Salin Dana Kas</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="salinDanaKasDanFee()"
+            class="flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-md shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-[0.99]"
+          >
+            <span>Salin Dana Kas + Fee</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="salinFeeSaja()"
+            class="flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-2.5 text-xs font-bold text-amber-200 transition hover:bg-amber-500/25 active:scale-[0.99]"
+          >
+            <span>Salin Fee Saja</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="unduhCadanganTxt()"
+            class="flex items-center justify-center gap-2 rounded-xl border border-sky-500/40 bg-sky-500/15 px-4 py-2.5 text-xs font-bold text-sky-200 transition hover:bg-sky-500/25 active:scale-[0.99]"
+          >
+            <span>Unduh Cadangan (.txt)</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="salinCadanganTeks()"
+            class="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-4 py-2.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 active:scale-[0.99]"
+          >
+            <span>Salin Cadangan Teks</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="mintaResetHariBaru()"
+            class="flex items-center justify-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/15 px-4 py-2.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/25 active:scale-[0.99]"
+          >
+            <span>Reset Hari Baru</span>
+          </button>
+        </div>
+
+        <!-- Konfirmasi Reset Inline -->
+        <div id="resetConfirmBar" class="mt-3 hidden rounded-xl border border-rose-500/50 bg-rose-950/60 p-3.5">
+          <p class="text-xs font-semibold text-rose-200 sm:text-sm">
+            Mulai rekap hari baru? Seluruh entri harian dan status verifikasi audit saat ini akan dikosongkan. Pastikan cadangan sudah disimpan bila perlu.
+          </p>
+          <div class="mt-2.5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onclick="eksekusiResetHariBaru()"
+              class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-rose-500 active:scale-[0.99]"
+            >
+              Ya, Reset Sekarang
+            </button>
+            <button
+              type="button"
+              onclick="batalResetHariBaru()"
+              class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: AUDIT & CEK MANUAL (KHUSUS ADMIN SUPERVISI)                    -->
+    <!-- ===================================================================== -->
+    <main id="panelAudit" class="hidden">
+      <!-- 1. Kartu Status Audit Otomatis (Pemeriksaan Anomali Sistem) -->
+      <section class="mb-5 rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+              1. Pemeriksaan Anomali Sistem
+            </h2>
+            <p class="text-xs text-slate-400">
+              Deteksi otomatis selisih jumlah paket, entri kosong, dan potensi salah ketik nama
+            </p>
+          </div>
+          <span
+            id="auditSystemBadge"
+            class="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-extrabold text-emerald-300"
+          >
+            LOLOS AUDIT SISTEM
+          </span>
+        </div>
+
+        <div id="auditAnomaliesList" class="space-y-2"></div>
+      </section>
+
+      <!-- 2. Kalkulator Hitung Manual Admin & Perbandingan Akurasi -->
+      <section class="mb-5 rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+              2. Kalkulator Hitung Manual Admin
+            </h2>
+            <p class="text-xs text-slate-400">
+              Ketik rumus penjumlahan manual atau tarik deret angka untuk diuji silang
+            </p>
+          </div>
+          <button
+            type="button"
+            onclick="muatDeretAngkaDariEntri()"
+            class="rounded-xl border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 text-xs font-bold text-sky-300 transition hover:bg-sky-500/25 active:scale-[0.99]"
+          >
+            Muat Rincian Angka dari Entri
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <!-- Kotak Hitung Manual Kas -->
+          <div class="rounded-xl border border-slate-800 bg-slate-950/90 p-3">
+            <div class="mb-1.5 flex items-center justify-between">
+              <label for="manualKasExpr" class="text-xs font-bold text-sky-300">
+                Hitung Manual Kas Admin
+              </label>
+              <button
+                type="button"
+                onclick="kosongkanRumusManual('kas')"
+                class="text-[11px] font-medium text-slate-400 hover:text-rose-300"
+              >
+                Kosongkan
+              </button>
+            </div>
+            <textarea
+              id="manualKasExpr"
+              rows="3"
+              placeholder="Ketik penjumlahan kas..."
+              class="output-box w-full rounded-lg border border-slate-700 bg-slate-900 p-2.5 text-xs leading-relaxed text-white placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+            ></textarea>
+            <div class="mt-2 flex items-center justify-between text-xs">
+              <span class="text-slate-400">Hasil Manual Kas:</span>
+              <strong id="manualKasResult" class="text-sm font-extrabold text-sky-400">0</strong>
+            </div>
+          </div>
+
+          <!-- Kotak Hitung Manual Fee -->
+          <div class="rounded-xl border border-slate-800 bg-slate-950/90 p-3">
+            <div class="mb-1.5 flex items-center justify-between">
+              <label for="manualFeeExpr" class="text-xs font-bold text-amber-300">
+                Hitung Manual Fee Admin
+              </label>
+              <button
+                type="button"
+                onclick="kosongkanRumusManual('fee')"
+                class="text-[11px] font-medium text-slate-400 hover:text-rose-300"
+              >
+                Kosongkan
+              </button>
+            </div>
+            <textarea
+              id="manualFeeExpr"
+              rows="3"
+              placeholder="Ketik penjumlahan fee..."
+              class="output-box w-full rounded-lg border border-slate-700 bg-slate-900 p-2.5 text-xs leading-relaxed text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+            ></textarea>
+            <div class="mt-2 flex items-center justify-between text-xs">
+              <span class="text-slate-400">Hasil Manual Fee:</span>
+              <strong id="manualFeeResult" class="text-sm font-extrabold text-amber-400">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Perbandingan Akurasi (Sistem vs Manual Admin) -->
+        <div class="mt-4 overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full min-w-[460px] text-left text-xs">
+            <thead class="border-b border-slate-800 bg-slate-950 text-[11px] uppercase tracking-wider text-slate-400">
+              <tr>
+                <th class="px-3 py-2.5">Komponen</th>
+                <th class="px-3 py-2.5 text-right">Hitungan Sistem</th>
+                <th class="px-3 py-2.5 text-right">Manual Admin</th>
+                <th class="px-3 py-2.5 text-right">Selisih</th>
+                <th class="px-3 py-2.5 text-center">Status Akurasi</th>
+              </tr>
+            </thead>
+            <tbody id="auditComparisonBody" class="divide-y divide-slate-800/80 bg-slate-900/60"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 3. Checklist Verifikasi Per Pemesan -->
+      <section class="rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+              3. Checklist Verifikasi Per Pemesan
+            </h2>
+            <p class="text-xs text-slate-400">
+              Audit terbuka per baris &amp; penjumlahan untuk tiap pemesan
+            </p>
+          </div>
+          <span
+            id="auditVerifyProgress"
+            class="rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-bold text-sky-300"
+          >
+            0 / 0 Nama Terverifikasi
+          </span>
+        </div>
+
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onclick="centangSemuaAudit(true)"
+            class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+          >
+            Centang Semua
+          </button>
+          <button
+            type="button"
+            onclick="centangSemuaAudit(false)"
+            class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700"
+          >
+            Batal Centang Semua
+          </button>
+        </div>
+
+        <div id="auditChecklistContainer" class="space-y-2.5"></div>
+
+        <!-- Catatan Temuan Admin -->
+        <div class="mt-4">
+          <label for="auditAdminNoteInput" class="mb-1 block text-xs font-medium text-slate-300">
+            Catatan Supervisi / Temuan Bug Admin (Opsional)
+          </label>
+          <input
+            id="auditAdminNoteInput"
+            type="text"
+            placeholder="Tulis catatan supervisi jika ada..."
+            class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="mt-4">
+          <button
+            type="button"
+            onclick="salinBeritaAcaraAudit()"
+            class="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-md shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-[0.99]"
+          >
+            <span>Salin Berita Acara Audit Admin</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: LAPORAN & SISA                                                 -->
+    <!-- ===================================================================== -->
+    <main id="panelLaporan" class="hidden">
+      <!-- Ringkasan KPI Tab 3 -->
+      <section aria-label="Ringkasan Laporan & Sisa" class="mb-5 grid grid-cols-3 gap-2.5 sm:gap-3.5">
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 shadow-sm sm:p-4">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Total Belanja</div>
+          <div id="kpiBelanja" class="mt-1 text-lg font-extrabold text-sky-400 sm:text-2xl">0</div>
+        </div>
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 shadow-sm sm:p-4">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Total Klaim</div>
+          <div id="kpiKlaim" class="mt-1 text-lg font-extrabold text-amber-400 sm:text-2xl">0</div>
+        </div>
+        <div class="rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-3 shadow-sm sm:p-4">
+          <div class="text-[11px] font-medium uppercase tracking-wider text-emerald-300/80">Sisa Transfer</div>
+          <div id="kpiSisa" class="mt-1 text-lg font-extrabold text-emerald-400 sm:text-2xl">0</div>
+        </div>
+      </section>
+
+      <!-- 1. Rincian Belanja Hari Ini -->
+      <section class="mb-5 rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+            1. Rincian Belanja Hari Ini
+          </h2>
+          <span class="text-xs text-slate-400">Ongkir otomatis = Paket × Tarif</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div>
+            <label for="belanjaSlop" class="mb-1 block text-xs font-medium text-slate-300">Jumlah Slop</label>
+            <input
+              id="belanjaSlop"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="belanjaPaket" class="mb-1 block text-xs font-medium text-slate-300">Total Paket *</label>
+            <input
+              id="belanjaPaket"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="ongkirTarif" class="mb-1 block text-xs font-medium text-slate-300">Tarif Ongkir/Pkt</label>
+            <input
+              id="ongkirTarif"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="0"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="belanjaSlide" class="mb-1 block text-xs font-medium text-slate-300">Slide Foto</label>
+            <input
+              id="belanjaSlide"
+              type="text"
+              placeholder="Nomor slide"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label for="belanjaItemsInput" class="mb-1 block text-xs font-medium text-slate-300">
+            Daftar Item Belanja (tiap baris diakhiri @nominal, baris total lama otomatis diabaikan)
+          </label>
+          <textarea
+            id="belanjaItemsInput"
+            rows="6"
+            placeholder="Tulis daftar item belanja..."
+            class="output-box w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs leading-relaxed text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+          ></textarea>
+        </div>
+
+        <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
+          <span>Subtotal Barang: <strong id="infoSubtotalBarang" class="text-white">0</strong></span>
+          <span>Ongkir (<span id="infoPaketOngkir">0</span> × <span id="infoTarifOngkir">0</span>): <strong id="infoTotalOngkir" class="text-sky-400">0</strong></span>
+        </div>
+      </section>
+
+      <!-- 2. Rekap Klaim Per Tanggal -->
+      <section class="mb-5 rounded-2xl border border-slate-800 bg-slate-900/85 p-4 shadow-lg sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+            2. Rekap Klaim Per Tanggal
+          </h2>
+          <button
+            type="button"
+            onclick="tambahBlokTanggalKlaim()"
+            class="rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-bold text-slate-950 transition hover:bg-emerald-400 active:scale-[0.99]"
+          >
+            + Tambah Tanggal
+          </button>
+        </div>
+
+        <div class="mb-3">
+          <label for="klaimSlide" class="mb-1 block text-xs font-medium text-slate-300">
+            Instruksi Slide Foto Klaim
+          </label>
+          <input
+            id="klaimSlide"
+            type="text"
+            placeholder="Nomor slide foto klaim"
+            class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+    <!-- Modal Petunjuk Pintasan App (PWA) -->
+  <div
+    id="pwaModal"
+    class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm transition-opacity"
+  >
+    <div class="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="flex items-center gap-2 text-base font-bold text-white">
+          <span>📱</span> Pasang Pintasan Aplikasi (PWA)
+        </h3>
+        <button
+          type="button"
+          onclick="tutupModalPintasan()"
+          class="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-3 text-xs text-slate-300">
+        <!-- Tombol Instalasi Langsung jika Didukung Browser -->
+        <div id="pwaDirectInstallBox" class="hidden rounded-xl border border-emerald-500/40 bg-emerald-950/40 p-3 text-center">
+          <p class="mb-2 font-semibold text-emerald-300">Browser Anda mendukung instalasi langsung!</p>
+          <button
+            type="button"
+            onclick="eksekusiInstallPWA()"
+            class="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-slate-950 transition hover:bg-emerald-400 active:scale-95"
+          >
+            Klik untuk Pasang Pintasan Sekarang
+          </button>
+        </div>
+
+        <p class="text-slate-400">
+          Aplikasi web ini dapat dipasang di Layar Utama HP / Komputer tanpa melalui Play Store atau App Store.
+        </p>
+
+        <!-- Petunjuk Android -->
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+          <div class="mb-1 flex items-center gap-1.5 font-bold text-sky-400">
+            <span>🤖</span> Android (Chrome)
+          </div>
+          <ol class="list-inside list-decimal space-y-1 text-slate-300">
+            <li>Ketuk ikon <strong>titik tiga (⋮)</strong> di kanan atas browser.</li>
+            <li>Pilih menu <strong>"Tambahkan ke layar utama"</strong> / <strong>"Install app"</strong>.</li>
+            <li>Klik <strong>Tambah</strong>.</li>
+          </ol>
+        </div>
+
+        <!-- Petunjuk iOS -->
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+          <div class="mb-1 flex items-center gap-1.5 font-bold text-amber-400">
+            <span>🍎</span> iPhone / iPad (Safari)
+          </div>
+          <ol class="list-inside list-decimal space-y-1 text-slate-300">
+            <li>Ketuk tombol <strong>Bagikan (Share)</strong> di bagian bawah Safari.</li>
+            <li>Gulir ke bawah dan pilih <strong>"Tambah ke Layar Utama"</strong>.</li>
+            <li>Ketuk <strong>Tambah</strong> di pojok kanan atas.</li>
+          </ol>
+        </div>
+
+        <!-- Petunjuk Desktop -->
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+          <div class="mb-1 flex items-center gap-1.5 font-bold text-emerald-400">
+            <span>💻</span> Laptop / PC (Chrome &amp; Edge)
+          </div>
+          <ol class="list-inside list-decimal space-y-1 text-slate-300">
+            <li>Klik ikon <strong>Install/Pasang</strong> di bilah alamat browser (sebelah kanan URL).</li>
+            <li>Atau klik <strong>titik tiga (⋮)</strong> &rarr; <strong>Simpan dan bagikan</strong> &rarr; <strong>Pasang halaman sebagai aplikasi</strong>.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="mt-5 text-right">
+        <button
+          type="button"
+          onclick="tutupModalPintasan()"
+          class="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+        >
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifikasi -->
+  <div
+    id="toast"
+    role="status"
+    aria-live="polite"
+    class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full border border-emerald-400/40 bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white opacity-0 shadow-xl transition-all duration-200 sm:text-sm"
+  >
+    Tersalin
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'rekap_harian_klaim_audit_clean_v6';
+
+    // State utama aplikasi untuk 3 tab (bersih tanpa data contoh)
+    let appState = {
+      activeTab: 'rekap',
+      tanggal: '',
+      paket: '',
+      entries: [],
+
+      // State Tab 2: Audit & Cek Manual Admin
+      manualKasExpr: '',
+      manualFeeExpr: '',
+      verifiedNames: {},
+      auditAdminNote: '',
+
+      // State Tab 3: Laporan & Sisa
+      belanjaSlop: '',
+      belanjaPaket: '',
+      ongkirTarif: '',
+      belanjaSlide: '',
+      belanjaItemsText: '',
+      klaimSlide: '',
+      claimDates: [],
+      keteranganAll: '',
+      catatanManual: '',
+      konfirmasiTf: ''
+    };
+
+    let expandedEditId = null;
+    let toastTimer = null;
+
+    // Logika Instalasi PWA & Pembuatan Manifest Dynamic / Service Worker
+    let deferredInstallPrompt = null;
+
+    function generateAppIconSvg() {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+        <rect width="512" height="512" rx="120" fill="#090d16"/>
+        <rect x="32" y="32" width="448" height="448" rx="100" fill="none" stroke="#1e293b" stroke-width="16"/>
+        <circle cx="256" cy="256" r="160" fill="#0f172a" stroke="#10b981" stroke-width="16"/>
+        <path d="M180 260 L230 310 L330 190" fill="none" stroke="#10b981" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M160 370 H352" fill="none" stroke="#38bdf8" stroke-width="20" stroke-linecap="round"/>
+      </svg>`;
+      return 'data:image/svg+xml;base64,' + btoa(svg);
+    }
+
+    function initPWAFeatures() {
+      try {
+        const iconDataUri = generateAppIconSvg();
+        const favEl = document.getElementById('faviconLink');
+        const appleEl = document.getElementById('appleIconLink');
+        if (favEl) favEl.href = iconDataUri;
+        if (appleEl) appleEl.href = iconDataUri;
+
+        // Dynamic Manifest Blob
+        const manifestObj = {
+          name: 'Rekap Harian, Klaim & Audit Admin',
+          short_name: 'RekapUMKM',
+          description: 'Aplikasi Rekap Harian, Klaim & Audit Admin UMKM',
+          start_url: './',
+          display: 'standalone',
+          background_color: '#090d16',
+          theme_color: '#090d16',
+          icons: [
+            {
+              src: iconDataUri,
+              sizes: '512x512',
+              type: 'image/svg+xml',
+              purpose: 'any maskable'
+            }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const manEl = document.getElementById('manifestLink');
+        if (manEl) manEl.href = manifestUrl;
+
+        // Service Worker Blob untuk Caching Offline
+        if ('serviceWorker' in navigator) {
+          const swScript = `
+            const CACHE_NAME = 'rekap-umkm-cache-v1';
+            self.addEventListener('install', (e) => {
+              self.skipWaiting();
+            });
+            self.addEventListener('activate', (e) => {
+              e.waitUntil(clients.claim());
+            });
+            self.addEventListener('fetch', (e) => {
+              e.respondWith(
+                caches.match(e.request).then((cached) => {
+                  return cached || fetch(e.request).catch(() => caches.match('./'));
+                })
+              );
+            });
+          `;
+          const swBlob = new Blob([swScript], { type: 'application/javascript' });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker.register(swUrl).catch((err) => console.log('SW Note:', err));
+        }
+      } catch (err) {
+        console.warn('Inisialisasi PWA opsional:', err);
+      }
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const directBox = document.getElementById('pwaDirectInstallBox');
+      if (directBox) directBox.classList.remove('hidden');
+    });
+
+    function bukaModalPintasan() {
+      const modal = document.getElementById('pwaModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function tutupModalPintasan() {
+      const modal = document.getElementById('pwaModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function eksekusiInstallPWA() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            showToast('Pintasan aplikasi berhasil dipasang!');
+          }
+          deferredInstallPrompt = null;
+          tutupModalPintasan();
+        });
+      } else {
+        bukaModalPintasan();
+      }
+    }
+
+    // =========================================================================
+    // UTILITAS UMUM, FORMAT RIBUAN & PEMBERSIH OUTPUT WA
+    // =========================================================================
+    function showToast(message, isError = false) {
+      try {
+        const toastEl = document.getElementById('toast');
+        if (!toastEl) return;
+        toastEl.textContent = message;
+        toastEl.className =
+          'pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2.5 text-xs font-bold text-white shadow-xl transition-all duration-200 sm:text-sm ' +
+          (isError
+            ? 'border-rose-400/50 bg-rose-600 opacity-100'
+            : 'border-emerald-400/40 bg-emerald-600 opacity-100');
+
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastEl.classList.remove('opacity-100');
+          toastEl.classList.add('opacity-0');
+        }, 2100);
+      } catch (err) {
+        console.error('Kesalahan notifikasi:', err);
+      }
+    }
+
+    function setParseAlert(msg) {
+      const box = document.getElementById('parseAlert');
+      if (!box) return;
+      if (!msg) {
+        box.textContent = '';
+        box.classList.add('hidden');
+        return;
+      }
+      box.textContent = msg;
+      box.classList.remove('hidden');
+    }
+
+    /**
+     * Membersihkan seluruh output WA agar bebas dari tanda bintang (*) dan kata "Valid".
+     */
+    function bersihkanOutputWA(text) {
+      return String(text || '')
+        .replace(/\*/g, '')
+        .replace(/\bvalid\b/gi, '')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/ +\n/g, '\n')
+        .trim();
+    }
+
+    /**
+     * Format angka dengan pemisah ribuan titik (contoh: 1.018).
+     */
+    function formatRibuan(num) {
+      const n = Number(num) || 0;
+      const isNeg = n < 0;
+      const absVal = Math.abs(n);
+      const fixed = Number.isInteger(absVal) ? String(absVal) : absVal.toFixed(2).replace(/\.?0+$/, '');
+      const parts = fixed.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return (isNeg ? '-' : '') + parts.join(',');
+    }
+
+    /**
+     * Merapikan rincian item tanpa tanda kurung pada nominal fee, tanpa '*', dan tanpa kata 'Valid'.
+     * Contoh: "2 Angker Melon(10), 2 Suryaku(10)" -> "2 Angker Melon 10, 2 Suryaku 10"
+     */
+    function rapikanDetailTanpaKurung(rawDetail) {
+      return bersihkanOutputWA(
+        String(rawDetail || '')
+          .replace(/\s*\(\s*([+-]?\d+(?:[.,]\d+)?)\s*\)/g, ' $1')
+          .replace(/\s*\[\s*([+-]?\d+(?:[.,]\d+)?)\s*\]/g, ' $1')
+          .replace(/\s*,\s*/g, ', ')
+          .replace(/\s{2,}/g, ' ')
+          .trim()
+      );
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeJsAttr(str) {
+      return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    // =========================================================================
+    // NAVIGASI 3 TAB
+    // =========================================================================
+    function switchTab(tabName) {
+      try {
+        const validTabs = ['rekap', 'audit', 'laporan'];
+        appState.activeTab = validTabs.includes(tabName) ? tabName : 'rekap';
+
+        const panels = {
+          rekap: document.getElementById('panelRekap'),
+          audit: document.getElementById('panelAudit'),
+          laporan: document.getElementById('panelLaporan')
+        };
+
+        const buttons = {
+          rekap: document.getElementById('tabBtnRekap'),
+          audit: document.getElementById('tabBtnAudit'),
+          laporan: document.getElementById('tabBtnLaporan')
+        };
+
+        const activeBtnClass = 'rounded-xl bg-emerald-500 px-2.5 py-2.5 text-xs font-extrabold text-slate-950 shadow-sm transition sm:text-sm';
+        const idleBtnClass = 'rounded-xl px-2.5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white sm:text-sm';
+
+        validTabs.forEach((key) => {
+          if (panels[key]) {
+            if (appState.activeTab === key) {
+              panels[key].classList.remove('hidden');
+            } else {
+              panels[key].classList.add('hidden');
+            }
+          }
+          if (buttons[key]) {
+            buttons[key].className = appState.activeTab === key ? activeBtnClass : idleBtnClass;
+          }
+        });
+
+        if (appState.activeTab === 'rekap') {
+          renderAll();
+        } else if (appState.activeTab === 'audit') {
+          renderTabAudit();
+        } else if (appState.activeTab === 'laporan') {
+          renderTabLaporan();
+        }
+
+        saveToStorage();
+      } catch (err) {
+        console.error('Kesalahan pindah tab:', err);
+      }
+    }
+
+    // =========================================================================
+    // TAB 1: PARSER & LOGIKA REKAP HARIAN
+    // =========================================================================
+    function toggleEditHeaderInline() {
+      const box = document.getElementById('inlineHeaderEditor');
+      if (!box) return;
+      if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        box.classList.add('grid');
+        const tglEl = document.getElementById('editTanggalInput');
+        if (tglEl) tglEl.focus();
+      } else {
+        box.classList.add('hidden');
+        box.classList.remove('grid');
+      }
+    }
+
+    function bersihkanKotakTempel() {
+      setParseAlert('');
+      const el = document.getElementById('rawLinesInput');
+      if (el) {
+        el.value = '';
+        el.focus();
+      }
+    }
+
+    /**
+     * Parser baris order:
+     * - Mendeteksi judul tanggal & jumlah paket (misal: "18 November (16 Paket)")
+     * - Mengabaikan baris total/penutup ("Total Fee : 409", "Total : ...", dll.)
+     * - Mendukung nominal kas dalam kurung `(+4)` maupun tanpa kurung `+4` / `4`
+     * - Menjumlahkan angka fee di dalam `(...)` atau `[...]` pada rincian item
+     */
+    function parseBlokCatatan(rawText) {
+      const lines = String(rawText || '').split(/\r?\n/);
+      let foundDate = '';
+      let foundPaket = '';
+      const entries = [];
+
+      const monthRegex = /\b(\d{1,2}\s+(?:jan(?:uari)?|feb(?:ruari)?|mar(?:et)?|apr(?:il)?|mei|jun(?:i)?|jul(?:i)?|agu(?:stus)?|sep(?:tember)?|okt(?:ober)?|nov(?:ember)?|des(?:ember)?)(?:\s+\d{2,4})?)\b/i;
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = String(lines[i] || '').trim();
+        if (!line) continue;
+
+        line = line.replace(/^["'“”‘’•\-*]+/, '').replace(/["'“”‘’]+$/, '').trim();
+        line = line.replace(/^\d+[.)]\s+/, '').trim();
+        if (!line) continue;
+
+        // Abaikan baris ringkasan / total / header bagian laporan
+        if (/^(?:total(?:\s+(?:fee|dana\s+kas|kas|klaim|belanja|final))?|ringkasan|rekap\s+harian|rincian\s+(?:dana\s+kas|fee))\b/i.test(line)) {
+          continue;
+        }
+
+        // Tangkap baris judul tanggal & paket
+        const hasKasParen = /\(\s*[+-]?\d+(?:[.,]\d+)?\s*\)/.test(line);
+        const hasStandaloneKas = /\s+[+-]\d+(?:[.,]\d+)?(?:\s|$)/.test(line);
+        const dateMatch = line.match(monthRegex);
+        const paketMatch = line.match(/\(?\s*(\d+)\s*paket\s*\)?/i);
+
+        if (!hasKasParen && !hasStandaloneKas && (dateMatch || paketMatch)) {
+          if (dateMatch && !foundDate) foundDate = dateMatch[1].trim();
+          if (paketMatch && !foundPaket) foundPaket = paketMatch[1].trim();
+          continue;
+        }
+
+        // Ekstrak Nama, Kas (+4 atau (+4)), dan sisa rincian item
+        const kasParenMatch = line.match(/\(\s*([+-]?\d+(?:[.,]\d+)?)\s*\)/);
+        let nama = '';
+        let kas = 0;
+        let remainder = '';
+
+        if (kasParenMatch) {
+          const fullMatch = kasParenMatch[0];
+          const matchIndex = kasParenMatch.index;
+          nama = line.slice(0, matchIndex).replace(/[:\-–—]+$/, '').trim();
+          kas = parseFloat(kasParenMatch[1].replace(',', '.'));
+          if (Number.isNaN(kas)) kas = 0;
+          remainder = line.slice(matchIndex + fullMatch.length).trim();
+        } else {
+          // Mendukung tanpa kurung: "Zaini +4 2 Angker Melon(10)" atau "Zaini 4 2 Angker Melon(10)"
+          const noParenKasMatch = line.match(/^([A-Za-zÀ-ÿ.'\s]+?)\s+([+-]?\d+(?:[.,]\d+)?)(?:\s+(.*))?$/);
+          if (noParenKasMatch) {
+            nama = (noParenKasMatch[1] || '').trim();
+            kas = parseFloat((noParenKasMatch[2] || '0').replace(',', '.'));
+            if (Number.isNaN(kas)) kas = 0;
+            remainder = (noParenKasMatch[3] || '').trim();
+          } else {
+            nama = line;
+            kas = 0;
+            remainder = '';
+          }
+        }
+
+        if (!nama) nama = 'Tanpa Nama';
+
+        // Jumlahkan fee dari angka dalam (...) atau [...] pada bagian item
+        let feeTotal = 0;
+        const numTokenRegex = /(?:\(\s*([+-]?\d+(?:[.,]\d+)?)\s*\)|\[\s*([+-]?\d+(?:[.,]\d+)?)\s*\])/g;
+        let tokenMatch;
+        while ((tokenMatch = numTokenRegex.exec(remainder)) !== null) {
+          const rawNum = tokenMatch[1] !== undefined ? tokenMatch[1] : tokenMatch[2];
+          const parsedNum = parseFloat(String(rawNum).replace(',', '.'));
+          if (!Number.isNaN(parsedNum)) {
+            feeTotal += parsedNum;
+          }
+        }
+
+        const detailFee = rapikanDetailTanpaKurung(remainder);
+
+        entries.push({
+          id: 'ent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + '_' + i,
+          nama,
+          kas,
+          fee: feeTotal,
+          detailFee
+        });
+      }
+
+      return { foundDate, foundPaket, entries };
+    }
+
+    function bacaDanMasukkanBaris() {
+      try {
+        setParseAlert('');
+        const textarea = document.getElementById('rawLinesInput');
+        if (!textarea) return;
+        const rawText = textarea.value;
+        if (!rawText.trim()) {
+          setParseAlert('Tempel atau ketik minimal 1 baris order terlebih dahulu.');
+          textarea.focus();
+          return;
+        }
+
+        const { foundDate, foundPaket, entries } = parseBlokCatatan(rawText);
+
+        if (!entries.length && !foundDate && !foundPaket) {
+          setParseAlert('Tidak ada baris order yang terbaca. Periksa kembali format catatan Anda.');
+          textarea.focus();
+          return;
+        }
+
+        if (foundDate) {
+          appState.tanggal = foundDate;
+          const editTgl = document.getElementById('editTanggalInput');
+          if (editTgl) editTgl.value = foundDate;
+        }
+        if (foundPaket) {
+          appState.paket = foundPaket;
+          const editPkt = document.getElementById('editPaketInput');
+          if (editPkt) editPkt.value = foundPaket;
+        }
+
+        if (entries.length) {
+          appState.entries.push(...entries);
+        }
+
+        textarea.value = '';
+        saveToStorage();
+        renderAll();
+        showToast(`${entries.length} baris berhasil dimasukkan`);
+      } catch (err) {
+        console.error('Kesalahan baca baris:', err);
+        setParseAlert('Terjadi kesalahan saat membaca baris order.');
+      }
+    }
+
+    function toggleEditPanel(id) {
+      expandedEditId = expandedEditId === id ? null : id;
+      renderAll();
+    }
+
+    function simpanEditRincian(id) {
+      const namaEl = document.getElementById(`edit_nama_${id}`);
+      const kasEl = document.getElementById(`edit_kas_${id}`);
+      const feeEl = document.getElementById(`edit_fee_${id}`);
+      const detailEl = document.getElementById(`edit_detail_${id}`);
+      if (!namaEl || !kasEl || !feeEl || !detailEl) return;
+
+      const namaBersih = namaEl.value.trim();
+      if (!namaBersih) {
+        showToast('Nama pemesan tidak boleh kosong', true);
+        namaEl.focus();
+        return;
+      }
+
+      const kasVal = kasEl.value === '' ? 0 : parseFloat(kasEl.value);
+      const feeVal = feeEl.value === '' ? 0 : parseFloat(feeEl.value);
+
+      appState.entries = appState.entries.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              nama: namaBersih,
+              kas: Number.isNaN(kasVal) ? 0 : kasVal,
+              fee: Number.isNaN(feeVal) ? 0 : feeVal,
+              detailFee: rapikanDetailTanpaKurung(detailEl.value)
+            }
+          : item
+      );
+
+      expandedEditId = null;
+      saveToStorage();
+      renderAll();
+      showToast('Perubahan disimpan');
+    }
+
+    function hapusEntri(id) {
+      appState.entries = appState.entries.filter((e) => e.id !== id);
+      if (expandedEditId === id) expandedEditId = null;
+      saveToStorage();
+      renderAll();
+      showToast('Baris order dihapus');
+    }
+
+    /**
+     * Mengelompokkan entri berdasarkan nama pemesan (case-insensitive & normalisasi spasi):
+     * - Menyimpan daftar kas per baris (kasList) & nomor baris asli (rowNumbers)
+     * - Menyimpan daftar fee per baris (feeList) & rincian item bersih
+     */
+    function hitungRekapHarian() {
+      let totalKas = 0;
+      let totalFee = 0;
+      const mapByName = new Map();
+
+      appState.entries.forEach((item, idx) => {
+        const kasVal = Number(item.kas) || 0;
+        const feeVal = Number(item.fee) || 0;
+        totalKas += kasVal;
+        totalFee += feeVal;
+
+        const cleanName = String(item.nama || '').replace(/\s+/g, ' ').trim();
+        const key = cleanName.toLowerCase();
+
+        if (!mapByName.has(key)) {
+          mapByName.set(key, {
+            key,
+            nama: cleanName,
+            kas: 0,
+            kasList: [],
+            fee: 0,
+            feeList: [],
+            rowNumbers: [],
+            details: []
+          });
+        }
+
+        const group = mapByName.get(key);
+        group.kas += kasVal;
+        group.kasList.push(kasVal);
+        group.fee += feeVal;
+        group.feeList.push(feeVal);
+        group.rowNumbers.push(idx + 1);
+
+        const cleanDetail = rapikanDetailTanpaKurung(item.detailFee);
+        if (cleanDetail) {
+          group.details.push(cleanDetail);
+        }
+      });
+
+      const groupedList = Array.from(mapByName.values()).map((g) => ({
+        key: g.key,
+        nama: g.nama,
+        kas: g.kas,
+        kasList: g.kasList,
+        fee: g.fee,
+        feeList: g.feeList,
+        rowNumbers: g.rowNumbers,
+        detailGabungan: g.details.join(', ')
+      }));
+
+      return {
+        groupedList,
+        totalKas,
+        totalFee,
+        totalFinal: totalKas + totalFee
+      };
+    }
+
+    /**
+     * Format khusus Dana Kas TANPA dalam kurung:
+     * - 1x order: "+4"
+     * - 2x/3x/dst: "+3 + 3 = 6" atau "+4 + 4 + 4 = 12"
+     */
+    function formatEkspresiKasTanpaKurung(g) {
+      if (Array.isArray(g.kasList) && g.kasList.length > 1) {
+        const bagian = g.kasList
+          .map((k, idx) => (idx === 0 ? `+${formatRibuan(k)}` : formatRibuan(k)))
+          .join(' + ');
+        return `${bagian} = ${formatRibuan(g.kas)}`;
+      }
+      return `+${formatRibuan(g.kas)}`;
+    }
+
+    function renderDaftarEntri(groupedList) {
+      const listEl = document.getElementById('listEntri');
+      const countEntriEl = document.getElementById('countEntri');
+      const countGroupedEl = document.getElementById('countGrouped');
+
+      if (countEntriEl) countEntriEl.textContent = String(appState.entries.length);
+      if (countGroupedEl) countGroupedEl.textContent = String(groupedList.length);
+      if (!listEl) return;
+
+      if (!appState.entries.length) {
+        listEl.innerHTML =
+          '<div class="rounded-xl border border-dashed border-slate-800 bg-slate-950/50 p-4 text-center text-xs text-slate-400 sm:text-sm">Belum ada entri order. Tempel catatan mentah di atas lalu tekan "Baca &amp; Masukkan Baris".</div>';
+        return;
+      }
+
+      listEl.innerHTML = appState.entries
+        .map((item, idx) => {
+          const isEditing = expandedEditId === item.id;
+          const cleanDetail = rapikanDetailTanpaKurung(item.detailFee);
+          const editPanelHtml = isEditing
+            ? `
+              <div class="mt-3 rounded-xl border border-sky-500/30 bg-slate-900/90 p-3">
+                <div class="mb-2 text-xs font-bold text-sky-300">Edit Baris Order #${idx + 1}</div>
+                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                  <div>
+                    <label class="mb-1 block text-[11px] text-slate-400">Nama</label>
+                    <input
+                      id="edit_nama_${escapeHtml(item.id)}"
+                      type="text"
+                      value="${escapeHtml(item.nama)}"
+                      class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-[11px] text-slate-400">Dana Kas</label>
+                    <input
+                      id="edit_kas_${escapeHtml(item.id)}"
+                      type="number"
+                      step="any"
+                      value="${escapeHtml(String(item.kas))}"
+                      class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-[11px] text-slate-400">Nominal Fee</label>
+                    <input
+                      id="edit_fee_${escapeHtml(item.id)}"
+                      type="number"
+                      step="any"
+                      value="${escapeHtml(String(item.fee))}"
+                      class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div class="mt-2.5">
+                  <label class="mb-1 block text-[11px] text-slate-400">Detail Item</label>
+                  <input
+                    id="edit_detail_${escapeHtml(item.id)}"
+                    type="text"
+                    value="${escapeHtml(cleanDetail)}"
+                    class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none"
+                  />
+                </div>
+                <div class="mt-2.5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onclick="simpanEditRincian('${escapeJsAttr(item.id)}')"
+                    class="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-slate-950 hover:bg-emerald-400"
+                  >
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onclick="toggleEditPanel('${escapeJsAttr(item.id)}')"
+                    class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            `
+            : '';
+
+          return `
+            <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-3.5">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="rounded-md bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold text-slate-400">#${idx + 1}</span>
+                    <span class="text-sm font-bold text-white">${escapeHtml(item.nama)}</span>
+                  </div>
+                  <div class="mt-1 text-xs font-medium text-slate-300">
+                    Kas: <span class="font-bold text-sky-400">+${formatRibuan(item.kas)}</span> •
+                    Fee: <span class="font-bold text-amber-400">${formatRibuan(item.fee)}</span>
+                  </div>
+                  ${
+                    cleanDetail
+                      ? `<div class="mt-0.5 text-xs text-slate-400">${escapeHtml(cleanDetail)}</div>`
+                      : ''
+                  }
+                </div>
+
+                <div class="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    onclick="toggleEditPanel('${escapeJsAttr(item.id)}')"
+                    class="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 active:scale-[0.98]"
+                  >
+                    ${isEditing ? 'Batal' : 'Edit'}
+                  </button>
+                  <button
+                    type="button"
+                    onclick="hapusEntri('${escapeJsAttr(item.id)}')"
+                    class="rounded-lg border border-rose-500/30 bg-rose-500/15 px-2.5 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/25 active:scale-[0.98]"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+              ${editPanelHtml}
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    function bangunTeksDanaKas(groupedList, totalKas) {
+      const judulTanggal = (appState.tanggal || 'TANGGAL REKAP').trim().toUpperCase();
+      const jumlahPaketVal = appState.paket !== '' ? formatRibuan(appState.paket) : '0';
+      const kasLines = groupedList.map((g) => `• ${g.nama} ${formatEkspresiKasTanpaKurung(g)}`);
+
+      return bersihkanOutputWA([
+        `REKAP DANA KAS — ${judulTanggal}`,
+        `Ringkasan: ${jumlahPaketVal} Paket`,
+        ``,
+        `RINCIAN DANA KAS`,
+        ...(kasLines.length ? kasLines : ['-']),
+        `Total Dana Kas: ${formatRibuan(totalKas)}`
+      ].join('\n'));
+    }
+
+    function bangunTeksFeeSaja(groupedList, totalFee) {
+      const judulTanggal = (appState.tanggal || 'TANGGAL REKAP').trim().toUpperCase();
+      const jumlahPaketVal = appState.paket !== '' ? formatRibuan(appState.paket) : '0';
+      const feeLines = groupedList.map((g) => {
+        const detailPart = g.detailGabungan ? ` — ${g.detailGabungan}` : '';
+        return `• ${g.nama}: ${formatRibuan(g.fee)}${detailPart}`;
+      });
+
+      return bersihkanOutputWA([
+        `REKAP FEE — ${judulTanggal}`,
+        `Ringkasan: ${jumlahPaketVal} Paket`,
+        ``,
+        `RINCIAN FEE`,
+        ...(feeLines.length ? feeLines : ['-']),
+        `Total Fee: ${formatRibuan(totalFee)}`
+      ].join('\n'));
+    }
+
+    function bangunTeksLengkap(groupedList, totalKas, totalFee, totalFinal) {
+      const judulTanggal = (appState.tanggal || 'TANGGAL REKAP').trim().toUpperCase();
+      const jumlahPaketVal = appState.paket !== '' ? formatRibuan(appState.paket) : '0';
+
+      const kasLines = groupedList.map((g) => `• ${g.nama} ${formatEkspresiKasTanpaKurung(g)}`);
+      const feeLines = groupedList.map((g) => {
+        const detailPart = g.detailGabungan ? ` — ${g.detailGabungan}` : '';
+        return `• ${g.nama}: ${formatRibuan(g.fee)}${detailPart}`;
+      });
+      const gabunganLines = groupedList.map((g) => {
+        const subtotal = g.kas + g.fee;
+        const detailPart = g.detailGabungan ? ` — ${g.detailGabungan}` : '';
+        return `• ${g.nama}: Kas ${formatEkspresiKasTanpaKurung(g)} | Fee ${formatRibuan(g.fee)} | Subtotal ${formatRibuan(subtotal)}${detailPart}`;
+      });
+
+      return bersihkanOutputWA([
+        `REKAP HARIAN — ${judulTanggal}`,
+        `Ringkasan: ${jumlahPaketVal} Paket`,
+        ``,
+        `RINCIAN DANA KAS`,
+        ...(kasLines.length ? kasLines : ['-']),
+        `Total Dana Kas: ${formatRibuan(totalKas)}`,
+        ``,
+        `RINCIAN FEE`,
+        ...(feeLines.length ? feeLines : ['-']),
+        `Total Fee: ${formatRibuan(totalFee)}`,
+        ``,
+        `RINCIAN DANA KAS + FEE`,
+        ...(gabunganLines.length ? gabunganLines : ['-']),
+        `Total Dana Kas: ${formatRibuan(totalKas)}`,
+        `Total Fee: ${formatRibuan(totalFee)}`,
+        `Total Final (Dana Kas + Fee): ${formatRibuan(totalFinal)}`
+      ].join('\n'));
+    }
+
+    function renderAll() {
+      try {
+        const { groupedList, totalKas, totalFee, totalFinal } = hitungRekapHarian();
+
+        const kpiKasEl = document.getElementById('kpiKas');
+        const kpiFeeEl = document.getElementById('kpiFee');
+        const kpiFinalEl = document.getElementById('kpiFinal');
+        if (kpiKasEl) kpiKasEl.textContent = formatRibuan(totalKas);
+        if (kpiFeeEl) kpiFeeEl.textContent = formatRibuan(totalFee);
+        if (kpiFinalEl) kpiFinalEl.textContent = formatRibuan(totalFinal);
+
+        const dispTgl = document.getElementById('displayTanggal');
+        const dispPkt = document.getElementById('displayPaket');
+        if (dispTgl) dispTgl.textContent = appState.tanggal ? appState.tanggal : 'Belum terdeteksi';
+        if (dispPkt) dispPkt.textContent = `${appState.paket !== '' ? formatRibuan(appState.paket) : '0'} Paket`;
+
+        renderDaftarEntri(groupedList);
+
+        const outEl = document.getElementById('outputWA');
+        if (outEl) {
+          outEl.value = bangunTeksLengkap(groupedList, totalKas, totalFee, totalFinal);
+        }
+      } catch (err) {
+        console.error('Kesalahan render Tab 1:', err);
+      }
+    }
+
+    // =========================================================================
+    // TAB 2: AUDIT & CEK MANUAL ADMIN SUPERVISI
+    // =========================================================================
+
+    /**
+     * Mengevaluasi rumus penjumlahan/pengurangan manual yang diketik admin dengan aman tanpa eval().
+     */
+    function evaluasiRumusManual(exprText) {
+      const cleaned = String(exprText || '')
+        .replace(/,/g, '.')
+        .replace(/[^0-9.+\-\s]/g, ' ')
+        .trim();
+
+      if (!cleaned) {
+        return { hasValue: false, total: 0, countTerms: 0 };
+      }
+
+      const tokens = cleaned.match(/[+-]?\s*\d+(?:\.\d+)?/g);
+      if (!tokens || !tokens.length) {
+        return { hasValue: false, total: 0, countTerms: 0 };
+      }
+
+      let sum = 0;
+      tokens.forEach((tok) => {
+        const val = parseFloat(tok.replace(/\s+/g, ''));
+        if (!Number.isNaN(val)) sum += val;
+      });
+
+      return {
+        hasValue: true,
+        total: Math.round(sum * 1000) / 1000,
+        countTerms: tokens.length
+      };
+    }
+
+    /**
+     * Mendeteksi anomali data pada sistem (jumlah paket vs baris entri, nilai 0, nama mirip).
+     */
+    function deteksiAnomaliSistem(groupedList) {
+      const warnings = [];
+      const totalBaris = appState.entries.length;
+      const paketHeader = parseInt(appState.paket, 10);
+
+      if (totalBaris === 0) {
+        warnings.push({
+          level: 'info',
+          title: 'Belum Ada Data Harian',
+          desc: 'Silakan masukkan baris order pada Tab Rekap Harian untuk mulai diaudit.'
+        });
+        return warnings;
+      }
+
+      if (!Number.isNaN(paketHeader) && paketHeader > 0 && paketHeader !== totalBaris) {
+        warnings.push({
+          level: 'error',
+          title: `Selisih Jumlah Paket (${paketHeader} Paket vs ${totalBaris} Baris Entri)`,
+          desc: 'Jumlah paket di header tidak sama dengan jumlah baris order yang masuk. Periksa apakah ada baris terlewat atau ganda.'
+        });
+      }
+
+      appState.entries.forEach((item, idx) => {
+        if ((Number(item.kas) || 0) === 0) {
+          warnings.push({
+            level: 'warn',
+            title: `Baris #${idx + 1} (${item.nama}): Dana Kas = 0`,
+            desc: 'Nominal Dana Kas bernilai 0. Pastikan memang tidak ada dana kas pada order ini.'
+          });
+        }
+        if ((Number(item.fee) || 0) === 0) {
+          warnings.push({
+            level: 'warn',
+            title: `Baris #${idx + 1} (${item.nama}): Fee = 0`,
+            desc: 'Nominal Fee bernilai 0. Pastikan format angka fee pada rincian item sudah terbaca.'
+          });
+        }
+        if (!String(item.detailFee || '').trim()) {
+          warnings.push({
+            level: 'warn',
+            title: `Baris #${idx + 1} (${item.nama}): Tanpa Rincian Item`,
+            desc: 'Baris ini tidak memiliki catatan item barang.'
+          });
+        }
+      });
+
+      // Cek kemiripan nama (contoh: selisih spasi/huruf/typo ringan)
+      for (let i = 0; i < groupedList.length; i++) {
+        for (let j = i + 1; j < groupedList.length; j++) {
+          const a = groupedList[i].nama;
+          const b = groupedList[j].nama;
+          const normA = a.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const normB = b.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (normA && normA === normB && a !== b) {
+            warnings.push({
+              level: 'warn',
+              title: `Potensi Nama Mirip: "${a}" vs "${b}"`,
+              desc: 'Penulisan nama hampir identik (beda spasi/tanda baca) sehingga tidak tergabung otomatis.'
+            });
+          } else if (normA.length >= 5 && normB.length >= 5 && (normA.includes(normB) || normB.includes(normA))) {
+            warnings.push({
+              level: 'info',
+              title: `Cek Kemiripan Nama: "${a}" & "${b}"`,
+              desc: 'Nama mengandung potongan kata yang sama. Pastikan memang dua pemesan berbeda.'
+            });
+          }
+        }
+      }
+
+      return warnings;
+    }
+
+    function muatDeretAngkaDariEntri() {
+      if (!appState.entries.length) {
+        showToast('Belum ada entri di Tab Rekap Harian', true);
+        return;
+      }
+      const kasDeret = appState.entries.map((e) => formatRibuan(Number(e.kas) || 0)).join(' + ');
+      const feeDeret = appState.entries.map((e) => formatRibuan(Number(e.fee) || 0)).join(' + ');
+
+      appState.manualKasExpr = kasDeret;
+      appState.manualFeeExpr = feeDeret;
+
+      const kasEl = document.getElementById('manualKasExpr');
+      const feeEl = document.getElementById('manualFeeExpr');
+      if (kasEl) kasEl.value = kasDeret;
+      if (feeEl) feeEl.value = feeDeret;
+
+      saveToStorage();
+      renderTabAudit();
+      showToast('Deret angka per baris dimuat ke kalkulator manual');
+    }
+
+    function kosongkanRumusManual(jenis) {
+      if (jenis === 'kas') {
+        appState.manualKasExpr = '';
+        const el = document.getElementById('manualKasExpr');
+        if (el) el.value = '';
+      } else {
+        appState.manualFeeExpr = '';
+        const el = document.getElementById('manualFeeExpr');
+        if (el) el.value = '';
+      }
+      saveToStorage();
+      renderTabAudit();
+    }
+
+    function toggleVerifikasiPemesan(nameKey) {
+      appState.verifiedNames[nameKey] = !appState.verifiedNames[nameKey];
+      saveToStorage();
+      renderTabAudit();
+    }
+
+    function centangSemuaAudit(statusBool) {
+      const { groupedList } = hitungRekapHarian();
+      groupedList.forEach((g) => {
+        appState.verifiedNames[g.key] = Boolean(statusBool);
+      });
+      saveToStorage();
+      renderTabAudit();
+      showToast(statusBool ? 'Semua pemesan ditandai terverifikasi' : 'Semua centang audit dibatalkan');
+    }
+
+    function renderTabAudit() {
+      try {
+        const { groupedList, totalKas, totalFee, totalFinal } = hitungRekapHarian();
+
+        // 1. Render Status Anomali Sistem
+        const warnings = deteksiAnomaliSistem(groupedList);
+        const badgeEl = document.getElementById('auditSystemBadge');
+        const anomListEl = document.getElementById('auditAnomaliesList');
+
+        const hasErrorOrWarn = warnings.some((w) => w.level === 'error' || w.level === 'warn');
+        if (badgeEl) {
+          if (appState.entries.length === 0) {
+            badgeEl.className = 'rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-bold text-slate-300';
+            badgeEl.textContent = 'MENUNGGU DATA';
+          } else if (hasErrorOrWarn) {
+            badgeEl.className = 'rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-xs font-extrabold text-amber-300';
+            badgeEl.textContent = `${warnings.length} TEMUAN PERLU CEK`;
+          } else {
+            badgeEl.className = 'rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-extrabold text-emerald-300';
+            badgeEl.textContent = 'LOLOS AUDIT SISTEM';
+          }
+        }
+
+        if (anomListEl) {
+          if (warnings.length === 0) {
+            anomListEl.innerHTML =
+              '<div class="rounded-xl border border-emerald-500/30 bg-emerald-950/25 p-3 text-xs text-emerald-200">Tidak ditemukan anomali: jumlah paket cocok dengan jumlah baris entri, semua baris memiliki nominal Kas &amp; Fee, serta tidak ada nama duplikat yang terpisah.</div>';
+          } else {
+            anomListEl.innerHTML = warnings
+              .map((w) => {
+                const styleMap = {
+                  error: 'border-rose-500/40 bg-rose-950/30 text-rose-200',
+                  warn: 'border-amber-500/40 bg-amber-950/25 text-amber-200',
+                  info: 'border-slate-700 bg-slate-950/70 text-slate-300'
+                };
+                return `
+                  <div class="rounded-xl border p-3 text-xs ${styleMap[w.level] || styleMap.info}">
+                    <div class="font-bold">${escapeHtml(w.title)}</div>
+                    <div class="mt-0.5 opacity-85">${escapeHtml(w.desc)}</div>
+                  </div>
+                `;
+              })
+              .join('');
+          }
+        }
+
+        // 2. Render Kalkulator Hitung Manual & Tabel Perbandingan Akurasi
+        const evalKas = evaluasiRumusManual(appState.manualKasExpr);
+        const evalFee = evaluasiRumusManual(appState.manualFeeExpr);
+
+        const manKasResEl = document.getElementById('manualKasResult');
+        const manFeeResEl = document.getElementById('manualFeeResult');
+        if (manKasResEl) manKasResEl.textContent = evalKas.hasValue ? formatRibuan(evalKas.total) : '0';
+        if (manFeeResEl) manFeeResEl.textContent = evalFee.hasValue ? formatRibuan(evalFee.total) : '0';
+
+        const compBodyEl = document.getElementById('auditComparisonBody');
+        if (compBodyEl) {
+          const manualFinalVal = evalKas.total + evalFee.total;
+          const hasBothManual = evalKas.hasValue || evalFee.hasValue;
+
+          const rowsData = [
+            {
+              label: 'Dana Kas',
+              sysVal: totalKas,
+              manVal: evalKas.total,
+              active: evalKas.hasValue
+            },
+            {
+              label: 'Fee',
+              sysVal: totalFee,
+              manVal: evalFee.total,
+              active: evalFee.hasValue
+            },
+            {
+              label: 'Total Final',
+              sysVal: totalFinal,
+              manVal: manualFinalVal,
+              active: hasBothManual
+            }
+          ];
+
+          compBodyEl.innerHTML = rowsData
+            .map((r) => {
+              const diff = Math.round((r.sysVal - r.manVal) * 1000) / 1000;
+              let statusBadge = '<span class="rounded-md bg-slate-800 px-2 py-0.5 text-[11px] font-semibold text-slate-400">Belum Diisi</span>';
+              if (r.active) {
+                if (diff === 0) {
+                  statusBadge = '<span class="rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-extrabold text-emerald-300">AKURAT 100%</span>';
+                } else {
+                  statusBadge = `<span class="rounded-md border border-rose-500/40 bg-rose-500/20 px-2 py-0.5 text-[11px] font-extrabold text-rose-300">SELISIH ${formatRibuan(Math.abs(diff))}</span>`;
+                }
+              }
+
+              return `
+                <tr>
+                  <td class="px-3 py-2.5 font-bold text-slate-200">${r.label}</td>
+                  <td class="px-3 py-2.5 text-right font-bold text-white">${formatRibuan(r.sysVal)}</td>
+                  <td class="px-3 py-2.5 text-right font-bold text-sky-300">${r.active ? formatRibuan(r.manVal) : '-'}</td>
+                  <td class="px-3 py-2.5 text-right font-semibold ${r.active && diff !== 0 ? 'text-rose-400' : 'text-slate-400'}">
+                    ${r.active ? formatRibuan(diff) : '-'}
+                  </td>
+                  <td class="px-3 py-2.5 text-center">${statusBadge}</td>
+                </tr>
+              `;
+            })
+            .join('');
+        }
+
+        // 3. Render Checklist Verifikasi Per Pemesan
+        const checkContainer = document.getElementById('auditChecklistContainer');
+        const progressEl = document.getElementById('auditVerifyProgress');
+
+        let verifiedCount = 0;
+        groupedList.forEach((g) => {
+          if (appState.verifiedNames[g.key]) verifiedCount += 1;
+        });
+
+        if (progressEl) {
+          progressEl.textContent = `${verifiedCount} / ${groupedList.length} Nama Terverifikasi`;
+        }
+
+        if (checkContainer) {
+          if (!groupedList.length) {
+            checkContainer.innerHTML =
+              '<div class="rounded-xl border border-dashed border-slate-800 bg-slate-950/50 p-4 text-center text-xs text-slate-400">Belum ada daftar pemesan untuk diverifikasi.</div>';
+          } else {
+            checkContainer.innerHTML = groupedList
+              .map((g) => {
+                const isChecked = Boolean(appState.verifiedNames[g.key]);
+                const kasBreakdown = g.rowNumbers
+                  .map((rowNum, idx) => `Baris #${rowNum} +${formatRibuan(g.kasList[idx])}`)
+                  .join(' + ');
+                const feeBreakdown = g.feeList.map((f) => formatRibuan(f)).join(' + ');
+
+                return `
+                  <label
+                    class="flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                      isChecked
+                        ? 'border-emerald-500/40 bg-emerald-950/20'
+                        : 'border-slate-800 bg-slate-950/80 hover:border-slate-700'
+                    }"
+                  >
+                    <input
+                      type="checkbox"
+                      ${isChecked ? 'checked' : ''}
+                      onchange="toggleVerifikasiPemesan('${escapeJsAttr(g.key)}')"
+                      class="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                    />
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center justify-between gap-1">
+                        <span class="text-sm font-bold ${isChecked ? 'text-emerald-200' : 'text-white'}">${escapeHtml(g.nama)}</span>
+                        <span class="text-[11px] font-semibold ${isChecked ? 'text-emerald-400' : 'text-slate-400'}">
+                          ${isChecked ? 'Terverifikasi' : 'Belum dicek'}
+                        </span>
+                      </div>
+                      <div class="mt-1 text-xs text-slate-300">
+                        Kas: <span class="font-semibold text-sky-400">${escapeHtml(kasBreakdown)} = ${formatRibuan(g.kas)}</span>
+                      </div>
+                      <div class="mt-0.5 text-xs text-slate-300">
+                        Fee: <span class="font-semibold text-amber-400">${escapeHtml(feeBreakdown)} = ${formatRibuan(g.fee)}</span>
+                      </div>
+                      ${
+                        g.detailGabungan
+                          ? `<div class="mt-0.5 text-[11px] text-slate-400">Item: ${escapeHtml(g.detailGabungan)}</div>`
+                          : ''
+                      }
+                    </div>
+                  </label>
+                `;
+              })
+              .join('');
+          }
+        }
+      } catch (err) {
+        console.error('Kesalahan render Tab Audit:', err);
+      }
+    }
+
+    function salinBeritaAcaraAudit() {
+      const { groupedList, totalKas, totalFee, totalFinal } = hitungRekapHarian();
+      const evalKas = evaluasiRumusManual(appState.manualKasExpr);
+      const evalFee = evaluasiRumusManual(appState.manualFeeExpr);
+      const warnings = deteksiAnomaliSistem(groupedList);
+
+      let verifiedCount = 0;
+      groupedList.forEach((g) => {
+        if (appState.verifiedNames[g.key]) verifiedCount += 1;
+      });
+
+      const judulTanggal = (appState.tanggal || 'TANGGAL REKAP').trim().toUpperCase();
+      const lines = [];
+      lines.push(`BERITA ACARA AUDIT ADMIN — ${judulTanggal}`);
+      lines.push(`Jumlah Paket Header: ${appState.paket || '0'} Paket | Baris Entri: ${appState.entries.length} Baris`);
+      lines.push(`Progres Verifikasi Pemesan: ${verifiedCount} / ${groupedList.length} Nama Terverifikasi`);
+      lines.push('');
+      lines.push(`PERBANDINGAN HITUNGAN (SISTEM VS MANUAL ADMIN)`);
+      lines.push(`• Dana Kas: Sistem ${formatRibuan(totalKas)} | Manual ${evalKas.hasValue ? formatRibuan(evalKas.total) : 'Belum diisi'}${evalKas.hasValue ? ` (Selisih ${formatRibuan(totalKas - evalKas.total)})` : ''}`);
+      lines.push(`• Fee: Sistem ${formatRibuan(totalFee)} | Manual ${evalFee.hasValue ? formatRibuan(evalFee.total) : 'Belum diisi'}${evalFee.hasValue ? ` (Selisih ${formatRibuan(totalFee - evalFee.total)})` : ''}`);
+      lines.push(`• Total Final: Sistem ${formatRibuan(totalFinal)} | Manual ${(evalKas.hasValue || evalFee.hasValue) ? formatRibuan(evalKas.total + evalFee.total) : 'Belum diisi'}`);
+      lines.push('');
+      lines.push(`STATUS PEMERIKSAAN ANOMALI`);
+      if (warnings.length === 0) {
+        lines.push(`• Lolos audit sistem, tidak ditemukan anomali.`);
+      } else {
+        warnings.forEach((w) => lines.push(`• ${w.title}`));
+      }
+
+      if (appState.auditAdminNote && appState.auditAdminNote.trim()) {
+        lines.push('');
+        lines.push(`Catatan Admin Supervisi: ${appState.auditAdminNote.trim()}`);
+      }
+
+      salinKeClipboard(bersihkanOutputWA(lines.join('\n')), 'Berita acara audit admin disalin!');
+    }
+
+    // =========================================================================
+    // AKSI SALIN TERPISAH, CADANGAN & RESET (TAB 1)
+    // =========================================================================
+    function salinKeClipboard(text, suksesMsg) {
+      if (!text) {
+        showToast('Tidak ada teks untuk disalin', true);
+        return;
+      }
+
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => showToast(suksesMsg))
+          .catch(() => salinFallback(text, suksesMsg));
+      } else {
+        salinFallback(text, suksesMsg);
+      }
+    }
+
+    function salinFallback(text, suksesMsg) {
+      try {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        temp.setAttribute('readonly', '');
+        temp.style.position = 'fixed';
+        temp.style.top = '-9999px';
+        document.body.appendChild(temp);
+        temp.select();
+        temp.setSelectionRange(0, temp.value.length);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(temp);
+        if (ok) {
+          showToast(suksesMsg);
+        } else {
+          showToast('Gagal menyalin otomatis, salin manual dari kotak teks', true);
+        }
+      } catch (e) {
+        showToast('Gagal menyalin otomatis, salin manual dari kotak teks', true);
+      }
+    }
+
+    function salinDanaKasSaja() {
+      const { groupedList, totalKas } = hitungRekapHarian();
+      salinKeClipboard(bangunTeksDanaKas(groupedList, totalKas), 'Dana Kas disalin!');
+    }
+
+    function salinDanaKasDanFee() {
+      const { groupedList, totalKas, totalFee, totalFinal } = hitungRekapHarian();
+      salinKeClipboard(bangunTeksLengkap(groupedList, totalKas, totalFee, totalFinal), 'Dana Kas + Fee disalin!');
+    }
+
+    function salinFeeSaja() {
+      const { groupedList, totalFee } = hitungRekapHarian();
+      salinKeClipboard(bangunTeksFeeSaja(groupedList, totalFee), 'Rincian Fee disalin!');
+    }
+
+    function susunCadanganTeks() {
+      const { groupedList, totalKas, totalFee, totalFinal } = hitungRekapHarian();
+      const laporan = bangunTeksLengkap(groupedList, totalKas, totalFee, totalFinal);
+      const cadanganObj = {
+        app: 'Rekap Harian, Klaim & Audit Admin',
+        version: 5,
+        exportedAt: new Date().toISOString(),
+        header: {
+          tanggal: appState.tanggal,
+          paket: appState.paket
+        },
+        totals: {
+          totalKas,
+          totalFee,
+          totalFinal
+        },
+        entries: appState.entries,
+        audit: {
+          manualKasExpr: appState.manualKasExpr,
+          manualFeeExpr: appState.manualFeeExpr,
+          verifiedNames: appState.verifiedNames,
+          auditAdminNote: appState.auditAdminNote
+        }
+      };
+
+      return [
+        '=== CADANGAN REKAP HARIAN ===',
+        laporan,
+        '',
+        '=== DATA CADANGAN JSON ===',
+        JSON.stringify(cadanganObj, null, 2)
+      ].join('\n');
+    }
+
+    function salinCadanganTeks() {
+      salinKeClipboard(susunCadanganTeks(), 'Cadangan teks berhasil disalin!');
+    }
+
+    function unduhCadanganTxt() {
+      try {
+        const cadangan = susunCadanganTeks();
+        const slug = (appState.tanggal || 'rekap-harian')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        const filename = `cadangan-${slug || 'harian'}.txt`;
+
+        const blob = new Blob([cadangan], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Diunduh: ${filename}`);
+      } catch (err) {
+        showToast('Gagal mengunduh file cadangan', true);
+      }
+    }
+
+    function toggleImportBox(forceState) {
+      const panel = document.getElementById('importPanel');
+      if (!panel) return;
+      const nextOpen = typeof forceState === 'boolean' ? forceState : panel.classList.contains('hidden');
+      if (nextOpen) {
+        panel.classList.remove('hidden');
+        const ta = document.getElementById('importTextarea');
+        if (ta) ta.focus();
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+
+    function prosesImporCadangan() {
+      const ta = document.getElementById('importTextarea');
+      const rawText = ta ? ta.value.trim() : '';
+      if (!rawText) {
+        showToast('Tempelkan data cadangan JSON terlebih dahulu', true);
+        return;
+      }
+
+      try {
+        const marker = '=== DATA CADANGAN JSON ===';
+        const markerIdx = rawText.indexOf(marker);
+        const jsonCandidate = markerIdx !== -1 ? rawText.slice(markerIdx + marker.length).trim() : rawText;
+
+        const parsed = JSON.parse(jsonCandidate);
+        const sourceEntries = Array.isArray(parsed.entries) ? parsed.entries : null;
+        if (!sourceEntries) {
+          showToast('Format JSON tidak memuat daftar entries', true);
+          return;
+        }
+
+        const header = parsed.header || {};
+        appState.tanggal = typeof header.tanggal === 'string' ? header.tanggal : (typeof parsed.tanggal === 'string' ? parsed.tanggal : '');
+        appState.paket = header.paket !== undefined ? String(header.paket) : (parsed.paket !== undefined ? String(parsed.paket) : '');
+        appState.entries = sourceEntries.map((e, idx) => ({
+          id: e.id ? String(e.id) : `imp_${Date.now()}_${idx}`,
+          nama: String(e.nama || '').trim() || `Tanpa Nama ${idx + 1}`,
+          kas: Number(e.kas) || 0,
+          fee: Number(e.fee) || 0,
+          detailFee: rapikanDetailTanpaKurung(e.detailFee || '')
+        }));
+
+        if (parsed.audit) {
+          appState.manualKasExpr = String(parsed.audit.manualKasExpr || '');
+          appState.manualFeeExpr = String(parsed.audit.manualFeeExpr || '');
+          appState.verifiedNames = parsed.audit.verifiedNames || {};
+          appState.auditAdminNote = String(parsed.audit.auditAdminNote || '');
+        }
+
+        const setEl = (id, v) => {
+          const el = document.getElementById(id);
+          if (el) el.value = v;
+        };
+        setEl('editTanggalInput', appState.tanggal);
+        setEl('editPaketInput', appState.paket);
+        setEl('manualKasExpr', appState.manualKasExpr);
+        setEl('manualFeeExpr', appState.manualFeeExpr);
+        setEl('auditAdminNoteInput', appState.auditAdminNote);
+
+        expandedEditId = null;
+        saveToStorage();
+        renderAll();
+        if (ta) ta.value = '';
+        toggleImportBox(false);
+        showToast('Cadangan berhasil dipulihkan!');
+      } catch (err) {
+        showToast('Format cadangan JSON tidak valid', true);
+      }
+    }
+
+    function mintaResetHariBaru() {
+      const bar = document.getElementById('resetConfirmBar');
+      if (bar) bar.classList.remove('hidden');
+    }
+
+    function batalResetHariBaru() {
+      const bar = document.getElementById('resetConfirmBar');
+      if (bar) bar.classList.add('hidden');
+    }
+
+    function eksekusiResetHariBaru() {
+      appState.entries = [];
+      appState.tanggal = '';
+      appState.paket = '';
+      appState.manualKasExpr = '';
+      appState.manualFeeExpr = '';
+      appState.verifiedNames = {};
+      appState.auditAdminNote = '';
+
+      ['editTanggalInput', 'editPaketInput', 'manualKasExpr', 'manualFeeExpr', 'auditAdminNoteInput'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+      expandedEditId = null;
+      batalResetHariBaru();
+      saveToStorage();
+      renderAll();
+      showToast('Siap untuk rekap hari baru!');
+    }
+
+    function salurkanKeLaporanBos() {
+      const { totalKas, totalFee } = hitungRekapHarian();
+      if (totalKas === 0 && totalFee === 0) {
+        showToast('Belum ada total kas/fee untuk dikirim ke Tab Laporan', true);
+        return;
+      }
+      const label = (appState.tanggal || 'TANGGAL BARU').toUpperCase();
+      appState.claimDates.push({
+        id: 'cd_' + Date.now(),
+        dateLabel: label,
+        kas: totalKas,
+        fee: totalFee
+      });
+      saveToStorage();
+      switchTab('laporan');
+      showToast(`Ditambahkan ke Laporan & Sisa (${label})`);
+    }
+
+    // =========================================================================
+    // TAB 3: LAPORAN & SISA LOGIC
+    // =========================================================================
+    function tambahBlokTanggalKlaim() {
+      appState.claimDates.push({
+        id: 'cd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+        dateLabel: '',
+        kas: 0,
+        fee: 0
+      });
+      saveToStorage();
+      renderTabLaporan();
+    }
+
+    function hapusBlokTanggalKlaim(id) {
+      appState.claimDates = appState.claimDates.filter((c) => c.id !== id);
+      saveToStorage();
+      renderTabLaporan();
+    }
+
+    function updateBlokTanggalKlaim(id, field, val) {
+      appState.claimDates = appState.claimDates.map((c) => {
+        if (c.id !== id) return c;
+        if (field === 'dateLabel') return { ...c, dateLabel: val };
+        const num = parseFloat(val);
+        return { ...c, [field]: Number.isNaN(num) ? 0 : num };
+      });
+      saveToStorage();
+      updateLaporanOutputOnly();
+    }
+
+    function hitungBelanjaDanKlaim() {
+      const slop = parseFloat(appState.belanjaSlop) || 0;
+      const paket = parseFloat(appState.belanjaPaket) || 0;
+      const tarif = parseFloat(appState.ongkirTarif) || 0;
+      const totalOngkir = paket * tarif;
+
+      const rawLines = String(appState.belanjaItemsText || '').split(/\r?\n/);
+      const itemLines = [];
+      let subtotalBarang = 0;
+
+      for (const ln of rawLines) {
+        const clean = ln.trim();
+        if (!clean) continue;
+        if (/^(?:total(?:\s+belanja)?|ongkir|subtotal)\b/i.test(clean)) continue;
+
+        const atMatch = clean.match(/@\s*(\d+(?:[.,]\d+)?)/);
+        if (atMatch) {
+          const val = parseFloat(atMatch[1].replace(',', '.'));
+          if (!Number.isNaN(val)) subtotalBarang += val;
+        }
+        itemLines.push(clean);
+      }
+
+      const totalBelanja = subtotalBarang + totalOngkir;
+
+      let totalKasKlaim = 0;
+      let totalFeeKlaim = 0;
+      for (const cd of appState.claimDates) {
+        totalKasKlaim += Number(cd.kas) || 0;
+        totalFeeKlaim += Number(cd.fee) || 0;
+      }
+      const totalKlaim = totalKasKlaim + totalFeeKlaim;
+      const sisaTransfer = totalBelanja - totalKlaim;
+
+      return {
+        slop,
+        paket,
+        tarif,
+        totalOngkir,
+        itemLines,
+        subtotalBarang,
+        totalBelanja,
+        totalKasKlaim,
+        totalFeeKlaim,
+        totalKlaim,
+        sisaTransfer
+      };
+    }
+
+    function bangunTeksLaporanBos() {
+      const calc = hitungBelanjaDanKlaim();
+      const slideBelanja = (appState.belanjaSlide || '').trim();
+      const slideBelanjaTxt = slideBelanja ? ` (Rincian » slide foto ${slideBelanja})` : '';
+
+      const slideKlaim = (appState.klaimSlide || '').trim();
+      const slideKlaimTxt = slideKlaim ? ` (Rincian » slide foto ${slideKlaim})` : '';
+
+      const lines = [];
+      lines.push(`RINCIAN BELANJA HARI INI (${formatRibuan(calc.slop)} Slop / ${formatRibuan(calc.paket)} Paket)${slideBelanjaTxt}`);
+      calc.itemLines.forEach((l) => lines.push(l));
+      lines.push(`Ongkir (${formatRibuan(calc.paket)} Paket × @${formatRibuan(calc.tarif)}): @${formatRibuan(calc.totalOngkir)}`);
+      lines.push(`Total Belanja: ${formatRibuan(calc.totalBelanja)}`);
+      lines.push('');
+
+      lines.push(`REKAP KLAIM PER TANGGAL${slideKlaimTxt}`);
+      appState.claimDates.forEach((cd) => {
+        const k = Number(cd.kas) || 0;
+        const f = Number(cd.fee) || 0;
+        const sub = k + f;
+        lines.push(`Tanggal ${(cd.dateLabel || '').trim()}`);
+        lines.push(`• Dana Kas: ${formatRibuan(k)}`);
+        lines.push(`• Fee: ${formatRibuan(f)}`);
+        lines.push(`• Subtotal Klaim: ${formatRibuan(sub)}`);
+        lines.push('');
+      });
+
+      lines.push(`Total Dana Kas: ${formatRibuan(calc.totalKasKlaim)}`);
+      lines.push(`Total Fee: ${formatRibuan(calc.totalFeeKlaim)}`);
+      lines.push(`Total Klaim (Kas + Fee): ${formatRibuan(calc.totalKlaim)}`);
+      lines.push('');
+
+      if (appState.keteranganAll && appState.keteranganAll.trim()) {
+        lines.push(`Keterangan : ${appState.keteranganAll.trim()}`);
+      }
+      if (appState.catatanManual && appState.catatanManual.trim()) {
+        lines.push(`Catatan: ${appState.catatanManual.trim()}`);
+      }
+      if (appState.konfirmasiTf && appState.konfirmasiTf.trim()) {
+        lines.push(appState.konfirmasiTf.trim());
+      }
+      lines.push('');
+      lines.push(`Sisa  (Total Belanja - Total Klaim): ${formatRibuan(calc.sisaTransfer)}`);
+
+      return bersihkanOutputWA(lines.join('\n'));
+    }
+
+    function updateLaporanOutputOnly() {
+      try {
+        const calc = hitungBelanjaDanKlaim();
+        const setText = (id, val) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = val;
+        };
+        setText('kpiBelanja', formatRibuan(calc.totalBelanja));
+        setText('kpiKlaim', formatRibuan(calc.totalKlaim));
+        setText('kpiSisa', formatRibuan(calc.sisaTransfer));
+
+        setText('infoSubtotalBarang', formatRibuan(calc.subtotalBarang));
+        setText('infoPaketOngkir', formatRibuan(calc.paket));
+        setText('infoTarifOngkir', formatRibuan(calc.tarif));
+        setText('infoTotalOngkir', formatRibuan(calc.totalOngkir));
+
+        const outBos = document.getElementById('outputLaporanWA');
+        if (outBos) outBos.value = bangunTeksLaporanBos();
+      } catch (err) {
+        console.error('Kesalahan perbarui laporan:', err);
+      }
+    }
+
+    function renderTabLaporan() {
+      const listEl = document.getElementById('listBlokTanggal');
+      if (listEl) {
+        if (!appState.claimDates.length) {
+          listEl.innerHTML =
+            '<div class="rounded-xl border border-dashed border-slate-800 bg-slate-950/50 p-4 text-center text-xs text-slate-400">Belum ada tanggal klaim. Klik "+ Tambah Tanggal" atau gunakan tombol "Kirim ke Tab Laporan" dari Tab Rekap Harian.</div>';
+        } else {
+          listEl.innerHTML = appState.claimDates
+            .map((cd) => {
+              const sub = (Number(cd.kas) || 0) + (Number(cd.fee) || 0);
+              return `
+                <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
+                  <div class="mb-2 flex items-center justify-between gap-2">
+                    <input
+                      type="text"
+                      value="${escapeHtml(cd.dateLabel)}"
+                      oninput="updateBlokTanggalKlaim('${escapeJsAttr(cd.id)}', 'dateLabel', this.value)"
+                      placeholder="Tanggal klaim"
+                      class="w-40 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-bold text-white focus:border-emerald-500 focus:outline-none"
+                    />
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-400">Subtotal: <strong class="text-emerald-400">${formatRibuan(sub)}</strong></span>
+                      <button
+                        type="button"
+                        onclick="hapusBlokTanggalKlaim('${escapeJsAttr(cd.id)}')"
+                        class="rounded-lg border border-rose-500/30 bg-rose-500/15 px-2 py-1 text-[11px] font-semibold text-rose-200 hover:bg-rose-500/25"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label class="mb-1 block text-[11px] text-slate-400">Dana Kas</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value="${escapeHtml(String(cd.kas || ''))}"
+                        placeholder="0"
+                        oninput="updateBlokTanggalKlaim('${escapeJsAttr(cd.id)}', 'kas', this.value)"
+                        class="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-[11px] text-slate-400">Fee</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value="${escapeHtml(String(cd.fee || ''))}"
+                        placeholder="0"
+                        oninput="updateBlokTanggalKlaim('${escapeJsAttr(cd.id)}', 'fee', this.value)"
+                        class="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              `;
+            })
+            .join('');
+        }
+      }
+      updateLaporanOutputOnly();
+    }
+
+    function salinLaporanBosWA() {
+      const outBos = document.getElementById('outputLaporanWA');
+      salinKeClipboard(outBos ? outBos.value : '', 'Laporan & Sisa disalin!');
+    }
+
+    function kirimKeWhatsAppLangsung() {
+      const outBos = document.getElementById('outputLaporanWA');
+      const teks = outBos ? outBos.value : '';
+      if (!teks) return;
+      const url = `https://wa.me/?text=${encodeURIComponent(teks)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    // =========================================================================
+    // PENYIMPANAN LOKAL & INISIALISASI
+    // =========================================================================
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        const badge = document.getElementById('saveStatus');
+        if (badge) {
+          const jam = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-400"></span>Tersimpan ${jam}`;
+        }
+      } catch (err) {
+        // Aman bila localStorage dibatasi webview
+      }
+    }
+
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          appState = {
+            ...appState,
+            ...parsed,
+            entries: Array.isArray(parsed.entries) ? parsed.entries : [],
+            claimDates: Array.isArray(parsed.claimDates) ? parsed.claimDates : appState.claimDates,
+            verifiedNames: parsed.verifiedNames && typeof parsed.verifiedNames === 'object' ? parsed.verifiedNames : {}
+          };
+        }
+      } catch (err) {
+        // Gunakan state awal jika belum tersimpan
+      }
+
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      };
+
+      setVal('editTanggalInput', appState.tanggal || '');
+      setVal('editPaketInput', appState.paket || '');
+
+      setVal('manualKasExpr', appState.manualKasExpr || '');
+      setVal('manualFeeExpr', appState.manualFeeExpr || '');
+      setVal('auditAdminNoteInput', appState.auditAdminNote || '');
+
+      setVal('belanjaSlop', appState.belanjaSlop || '');
+      setVal('belanjaPaket', appState.belanjaPaket || '');
+      setVal('ongkirTarif', appState.ongkirTarif || '');
+      setVal('belanjaSlide', appState.belanjaSlide || '');
+      setVal('belanjaItemsInput', appState.belanjaItemsText || '');
+      setVal('klaimSlide', appState.klaimSlide || '');
+      setVal('keteranganAllInput', appState.keteranganAll || '');
+      setVal('catatanManualInput', appState.catatanManual || '');
+      setVal('konfirmasiTfInput', appState.konfirmasiTf || '');
+
+      renderAll();
+      renderTabAudit();
+      renderTabLaporan();
+      switchTab(appState.activeTab || 'rekap');
+    }
+
+    function bindInputListeners() {
+      const bindField = (elId, stateKey, callback) => {
+        const el = document.getElementById(elId);
+        if (el) {
+          el.addEventListener('input', (e) => {
+            appState[stateKey] = e.target.value;
+            saveToStorage();
+            if (typeof callback === 'function') callback();
+          });
+        }
+      };
+
+      // Tab 1
+      bindField('editTanggalInput', 'tanggal', renderAll);
+      bindField('editPaketInput', 'paket', renderAll);
+
+      // Tab 2 (Audit & Cek Manual)
+      bindField('manualKasExpr', 'manualKasExpr', renderTabAudit);
+      bindField('manualFeeExpr', 'manualFeeExpr', renderTabAudit);
+      bindField('auditAdminNoteInput', 'auditAdminNote', null);
+
+      // Tab 3 (Laporan & Sisa)
+      bindField('belanjaSlop', 'belanjaSlop', updateLaporanOutputOnly);
+      bindField('belanjaPaket', 'belanjaPaket', updateLaporanOutputOnly);
+      bindField('ongkirTarif', 'ongkirTarif', updateLaporanOutputOnly);
+      bindField('belanjaSlide', 'belanjaSlide', updateLaporanOutputOnly);
+      bindField('belanjaItemsInput', 'belanjaItemsText', updateLaporanOutputOnly);
+      bindField('klaimSlide', 'klaimSlide', updateLaporanOutputOnly);
+      bindField('keteranganAllInput', 'keteranganAll', updateLaporanOutputOnly);
+      bindField('catatanManualInput', 'catatanManual', updateLaporanOutputOnly);
+      bindField('konfirmasiTfInput', 'konfirmasiTf', updateLaporanOutputOnly);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initPWAFeatures();
+      bindInputListeners();
+      loadFromStorage();
+    });
+  </script>
+</body>
+</html>
